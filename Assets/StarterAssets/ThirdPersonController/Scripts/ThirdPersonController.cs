@@ -526,12 +526,31 @@ namespace StarterAssets
                 Renderer renderer = wall.GetComponent<Renderer>();
                 if (renderer != null)
                 {
-                    // URP Lit uses _BaseColor; fall back to _Color for the built-in pipeline
-                    Material material = renderer.material;
+                    // CreatePrimitive's default material uses the built-in Standard shader, which
+                    // isn't included in a URP-only build and renders as magenta. Build a proper
+                    // URP-compatible transparent material instead so the walls actually show up.
+                    Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+                    Material material = shader != null ? new Material(shader) : renderer.material;
+
                     if (material.HasProperty("_BaseColor"))
+                    {
                         material.SetColor("_BaseColor", ArenaWallColor);
+                        material.SetFloat("_Surface", 1f); // 0 = Opaque, 1 = Transparent
+                        material.SetOverrideTag("RenderType", "Transparent");
+                        material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                        material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                        material.SetInt("_ZWrite", 0);
+                        material.DisableKeyword("_ALPHATEST_ON");
+                        material.EnableKeyword("_ALPHABLEND_ON");
+                        material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                        material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                    }
                     else
+                    {
                         material.color = ArenaWallColor;
+                    }
+
+                    renderer.material = material;
                 }
             }
         }

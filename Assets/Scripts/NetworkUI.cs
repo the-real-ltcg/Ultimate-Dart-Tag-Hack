@@ -77,6 +77,13 @@ public class NetworkUI : MonoBehaviour
 
     private void OnHostButtonClicked()
     {
+        // UnityTransport's server listen address defaults to loopback (127.0.0.1) unless set
+        // otherwise, regardless of what ConnectionData.Address says - so without this, the host
+        // only ever accepts connections from itself, even though it displays its real LAN IP
+        // for other players to connect to.
+        var unityTransport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+        unityTransport.ConnectionData.ServerListenAddress = "0.0.0.0";
+
         NetworkManager.Singleton.StartHost();
 
         PopulateHostAddressText(FindLocalIpAddress());
